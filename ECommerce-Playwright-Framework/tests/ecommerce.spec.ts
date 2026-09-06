@@ -1,19 +1,20 @@
-import { test, expect } from '../fixtures/testFixtures';
-import { checkoutData, products } from '../test-data/users';
+import { expect } from '@playwright/test';
+import { test } from '../fixtures/testFixtures';
+import { checkoutData, products, users } from '../test-data/users';
 
-const login = async (loginPage: any) => {
+async function loginAsStandardUser(loginPage: { open(): Promise<void>; login(username: string, password: string): Promise<void> }) {
   await loginPage.open();
-  await loginPage.login('standard_user', 'secret_sauce');
-};
+  await loginPage.login(users.valid.username, users.valid.password);
+}
 
 test.describe('E-Commerce UI Regression', () => {
   test('@smoke valid user can login and view products', async ({ loginPage, inventoryPage }) => {
-    await login(loginPage);
+    await loginAsStandardUser(loginPage);
     await inventoryPage.assertLoaded();
   });
 
   test('@regression user can add products and remove a product', async ({ loginPage, inventoryPage, cartPage }) => {
-    await login(loginPage);
+    await loginAsStandardUser(loginPage);
     await inventoryPage.addProduct(products.backpack);
     await inventoryPage.addProduct(products.bikeLight);
     await inventoryPage.openCart();
@@ -24,7 +25,7 @@ test.describe('E-Commerce UI Regression', () => {
   });
 
   test('@regression user can complete checkout successfully', async ({ loginPage, inventoryPage, cartPage, checkoutPage }) => {
-    await login(loginPage);
+    await loginAsStandardUser(loginPage);
     await inventoryPage.addProduct(products.backpack);
     await inventoryPage.openCart();
     await cartPage.checkout();
@@ -35,7 +36,7 @@ test.describe('E-Commerce UI Regression', () => {
   });
 
   test('@regression product sorting works', async ({ loginPage, inventoryPage }) => {
-    await login(loginPage);
+    await loginAsStandardUser(loginPage);
     await inventoryPage.sortBy('lohi');
     await expect(inventoryPage.sortDropdown).toHaveValue('lohi');
     await inventoryPage.sortBy('hilo');
@@ -43,8 +44,8 @@ test.describe('E-Commerce UI Regression', () => {
   });
 });
 
-test('locked-out user cannot login', async ({ loginPage }) => {
+test('@regression locked-out user cannot login', async ({ loginPage }) => {
   await loginPage.open();
-  await loginPage.login('locked_out_user', 'secret_sauce');
+  await loginPage.login(users.locked.username, users.locked.password);
   await loginPage.assertLoginError('locked out');
 });
